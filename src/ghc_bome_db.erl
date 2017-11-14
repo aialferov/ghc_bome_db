@@ -3,7 +3,7 @@
 -export([
     start/0, stop/0,
 
-    put/3,
+    put/2,
     get/2, get/1,
     delete/2, delete/1
 ]).
@@ -13,7 +13,7 @@
 start() -> application:ensure_all_started(?MODULE).
 stop() -> application:stop(?MODULE).
 
-put(User, Type, Value) ->
+put(User, {Type, Value}) ->
     gen_server:call(?Server, {put, {User, {Type, Value}}}).
 
 get(User, Type) -> gen_server:call(?Server, {get, {User, Type}}).
