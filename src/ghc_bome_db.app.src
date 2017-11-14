@@ -4,8 +4,9 @@
     {vsn, "0.1.0"},
     {modules, []},
     {applications, [kernel, stdlib]},
-    {mod, {ghc_bome_db_app, [
-        {file_path, "/tmp/ghc_bome.db"},
+    {mod, {ghc_bome_db_app, []}},
+    {env, [
+        {file_path, "ghc_bome.db"},
         {save_interval, 1000} % milliseconds
-    ]}}
+    ]}
 ]}.

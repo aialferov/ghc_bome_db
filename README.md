@@ -31,5 +31,7 @@ $ make shell
 
 ## Persistence
 
-Data is being saved every second (if any changes) into the "/tmp/ghc_bome.db"
-file. The parameters are specified in the "src/ghc_bome_db.app.src" file.
+Data is being saved every second (if any changes) into the "ghc_bome.db"
+file (in the working directory). The parameters are specified in the
+"env" section of the "src/ghc_bome_db.app.src" file, so could be overriden
+by a custom config file.
