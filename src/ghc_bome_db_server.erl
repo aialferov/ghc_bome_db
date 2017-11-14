@@ -30,10 +30,10 @@ handle_call({put, {User, {Type, Value}}}, _From, State) ->
     {reply, ok, set_data(?Backend:put(User, Type, Value, data(State)), State)};
 
 handle_call({get, {User, Type}}, _From, State) ->
-    {reply, ?Backend:get(User, Type, data(State)), State};
+    {reply, {ok, ?Backend:get(User, Type, data(State))}, State};
 
 handle_call({get, User}, _From, State) ->
-    {reply, ?Backend:get(User, data(State)), State};
+    {reply, {ok, ?Backend:get(User, data(State))}, State};
 
 handle_call({delete, {User, Type}}, _From, State) ->
     {reply, ok, set_data(?Backend:delete(User, Type, data(State)), State)};
