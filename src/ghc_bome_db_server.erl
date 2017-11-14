@@ -13,34 +13,39 @@
 
 -define(Backend, ghc_bome_db_backend).
 
--define(FileName, "/tmp/ghc_bome.db").
-
--define(SaveInterval, 1000). % milliseconds
+-record(state, {data, saved, file_path}).
 
 start_link(Args) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, Args, []).
 
-init(_Args) ->
-    {ok, _TRef} = timer:send_interval(?SaveInterval, save),
-    {ok, {saved, ?Backend:load(?FileName)}}.
+init(Args) ->
+    SaveInterval = proplists:get_value(save_interval, Args),
+    {ok, _TRef} = timer:send_interval(SaveInterval, save),
 
-handle_call({put, {User, {Type, Value}}}, _From, {_Saved, Data}) ->
-    {reply, ok, {unsaved, ?Backend:put(User, Type, Value, Data)}};
+    FilePath = proplists:get_value(file_path, Args),
+    {ok, Data} = ?Backend:load(FilePath),
+    {ok, #state{data = Data, saved = true, file_path = FilePath}}.
 
-handle_call({get, {User, Type}}, _From, {Saved, Data}) ->
-    {reply, ?Backend:get(User, Type, Data), {Saved, Data}};
+handle_call({put, {User, {Type, Value}}}, _From, State) ->
+    {reply, ok, set_data(?Backend:put(User, Type, Value, data(State)), State)};
 
-handle_call({get, User}, _From, {Saved, Data}) ->
-    {reply, ?Backend:get(User, Data), {Saved, Data}};
+handle_call({get, {User, Type}}, _From, State) ->
+    {reply, ?Backend:get(User, Type, data(State)), State};
 
-handle_call({delete, {User, Type}}, _From, {_Saved, Data}) ->
-    {reply, ok, {unsaved, ?Backend:delete(User, Type, Data)}};
+handle_call({get, User}, _From, State) ->
+    {reply, ?Backend:get(User, data(State)), State};
 
-handle_call({delete, User}, _From, {_Saved, Data}) ->
-    {reply, ok, {unsaved, ?Backend:delete(User, Data)}}.
+handle_call({delete, {User, Type}}, _From, State) ->
+    {reply, ok, set_data(?Backend:delete(User, Type, data(State)), State)};
+
+handle_call({delete, User}, _From, State) ->
+    {reply, ok, set_data(?Backend:delete(User, data(State)), State)}.
 
 handle_cast(_Request, Data) -> {norepy, Data}.
 
-handle_info(save, {Saved, Data}) ->
-    Saved == saved orelse ?Backend:save(?FileName, Data),
-    {noreply, {saved, Data}}.
+handle_info(save, State = #state{saved = Saved, file_path = FilePath}) ->
+    Saved orelse ?Backend:save(FilePath, data(State)),
+    {noreply, State#state{saved = true}}.
+
+data(#state{data = Data}) -> Data.
+set_data(Data, State) -> State#state{saved = false, data = Data}.

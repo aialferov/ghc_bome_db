@@ -10,12 +10,13 @@
 
 load(FileName) ->
     case file:consult(FileName) of
-        {ok, [Data]} -> Data;
-        {error, _Reason} -> #{}
+        {ok, [Data]} -> {ok, Data};
+        {error, enoent} -> {ok, #{}};
+        {error, Reason} -> {error, Reason}
     end.
 
 save(FileName, Data) ->
-    file:write_file(FileName, lists:flatten(io_lib:format("~p.", [Data]))).
+    ok = file:write_file(FileName, lists:flatten(io_lib:format("~p.", [Data]))).
 
 put(User, Type, Value, Data) ->
     UserData = maps:get(User, Data, #{}),
