@@ -24,6 +24,8 @@ init(Args) ->
 
     FilePath = proplists:get_value(file_path, Args),
     {ok, Data} = ?Backend:load(FilePath),
+    ok = ?Backend:save(FilePath, Data),
+
     {ok, #state{data = Data, saved = true, file_path = FilePath}}.
 
 handle_call({put, {User, {Type, Value}}}, _From, State) ->
