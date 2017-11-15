@@ -23,7 +23,10 @@ put(User, Type, Value, Data) ->
     maps:put(User, maps:put(Type, Value, UserData), Data).
 
 get(User, Type, Data) ->
-    maps:get(Type, maps:get(User, Data, #{}), #{}).
+    case maps:get(Type, maps:get(User, Data, #{}), #{}) of
+        #{} -> #{};
+        Value -> #{Type => Value}
+    end.
 
 get(User, Data) ->
     maps:get(User, Data, #{}).
