@@ -32,8 +32,11 @@ get(User, Data) ->
     maps:get(User, Data, #{}).
 
 delete(User, Type, Data) ->
-    UserData = maps:get(User, Data, #{}),
-    maps:put(User, maps:remove(Type, UserData), Data).
+    UserData = maps:remove(Type, maps:get(User, Data, #{})),
+    case maps:size(UserData) > 0 of
+        true -> maps:put(User, UserData, Data);
+        false -> maps:remove(User, Data)
+    end.
 
 delete(User, Data) ->
     maps:remove(User, Data).
