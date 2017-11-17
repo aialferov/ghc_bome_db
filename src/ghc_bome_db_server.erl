@@ -13,7 +13,7 @@
 
 -define(Backend, ghc_bome_db_backend).
 
--record(state, {data, saved, file_path}).
+-record(state, {data_state, saved, file_path}).
 
 start_link(Args) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, Args, []).
@@ -23,31 +23,34 @@ init(Args) ->
     {ok, _TRef} = timer:send_interval(SaveInterval, save),
 
     FilePath = proplists:get_value(file_path, Args),
-    {ok, Data} = ?Backend:load(FilePath),
-    ok = ?Backend:save(FilePath, Data),
+    {ok, DataState} = ?Backend:load(FilePath),
+    ok = ?Backend:save(FilePath, DataState),
 
-    {ok, #state{data = Data, saved = true, file_path = FilePath}}.
+    {ok, #state{data_state = DataState, saved = true, file_path = FilePath}}.
 
-handle_call({put, {User, {Type, Value}}}, _From, State) ->
-    {reply, ok, set_data(?Backend:put(User, Type, Value, data(State)), State)};
+handle_call({put, {Id, Data}}, _From, State) ->
+    case ?Backend:put(Id, Data, data_state(State)) of
+        {ok, {Impact, NewDataState}} ->
+            {reply, {ok, Impact}, set_data_state(NewDataState, State)};
+        {error, Reason} ->
+            {reply, {error, Reason}, State}
+    end;
 
-handle_call({get, {User, Type}}, _From, State) ->
-    {reply, {ok, ?Backend:get(User, Type, data(State))}, State};
+handle_call({get, {Id, Options}}, _From, State) ->
+    {reply, ?Backend:get(Id, Options, data_state(State)), State};
 
-handle_call({get, User}, _From, State) ->
-    {reply, {ok, ?Backend:get(User, data(State))}, State};
+handle_call({Action, {Id, Data}}, _From, State) ->
+    case ?Backend:Action(Id, Data, data_state(State)) of
+        {ok, NewDataState} -> {reply, ok, set_data_state(NewDataState, State)};
+        {error, Reason} -> {reply, {error, Reason}, State}
+    end.
 
-handle_call({delete, {User, Type}}, _From, State) ->
-    {reply, ok, set_data(?Backend:delete(User, Type, data(State)), State)};
-
-handle_call({delete, User}, _From, State) ->
-    {reply, ok, set_data(?Backend:delete(User, data(State)), State)}.
-
-handle_cast(_Request, Data) -> {norepy, Data}.
+handle_cast(_Request, State) -> {norepy, State}.
 
 handle_info(save, State = #state{saved = Saved, file_path = FilePath}) ->
-    Saved orelse ?Backend:save(FilePath, data(State)),
+    Saved orelse ?Backend:save(FilePath, data_state(State)), 
     {noreply, State#state{saved = true}}.
 
-data(#state{data = Data}) -> Data.
-set_data(Data, State) -> State#state{saved = false, data = Data}.
+data_state(#state{data_state = DataState}) -> DataState.
+set_data_state(DataState, State) ->
+    State#state{data_state = DataState, saved = false}.

@@ -3,10 +3,7 @@
 
 -export([
     start/0, stop/0,
-
-    put/2,
-    get/2, get/1,
-    delete/2, delete/1
+    put/2, patch/2, get/2, delete/2
 ]).
 
 -define(Server, ghc_bome_db_server).
@@ -14,14 +11,9 @@
 start() -> application:ensure_all_started(?MODULE).
 stop() -> application:stop(?MODULE).
 
-put(User, {Type, Value}) -> call({put, {User, {Type, Value}}}).
-
-get(User, undefined) -> get(User);
-get(User, Type) -> call({get, {User, Type}}).
-get(User) -> call({get, User}).
-
-delete(User, undefined) -> delete(User);
-delete(User, Type) -> call({delete, {User, Type}}).
-delete(User) -> call({delete, User}).
+put(Id, Data) -> call({put, {Id, Data}}).
+patch(Id, Data) -> call({patch, {Id, Data}}).
+get(Id, Options) -> call({get, {Id, Options}}).
+delete(Id, Data) -> call({delete, {Id, Data}}).
 
 call(Request) -> gen_server:call(?Server, Request).

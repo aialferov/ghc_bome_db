@@ -2,41 +2,54 @@
 
 -export([
     load/1, save/2,
-
-    put/4,
-    get/3, get/2,
-    delete/3, delete/2
+    put/3, patch/3, get/3, delete/3
 ]).
 
 load(FileName) ->
     case file:consult(FileName) of
-        {ok, [Data]} -> {ok, Data};
+        {ok, [State]} -> {ok, State};
         {error, enoent} -> {ok, #{}};
         {error, Reason} -> {error, Reason}
     end.
 
-save(FileName, Data) ->
-    ok = file:write_file(FileName, lists:flatten(io_lib:format("~p.", [Data]))).
+save(FileName, State) ->
+    file:write_file(FileName, lists:flatten(io_lib:format("~p.", [State]))).
 
-put(User, Type, Value, Data) ->
-    UserData = maps:get(User, Data, #{}),
-    maps:put(User, maps:put(Type, Value, UserData), Data).
-
-get(User, Type, Data) ->
-    case maps:get(Type, maps:get(User, Data, #{}), #{}) of
-        #{} -> #{};
-        Value -> #{Type => Value}
+put(Id, Data, State) ->
+    IsModified = maps:is_key(Id, State),
+    NewState = maps:put(Id, Data, State),
+    case IsModified of
+        true -> {ok, {modified, NewState}};
+        false -> {ok, {created, NewState}}
     end.
 
-get(User, Data) ->
-    maps:get(User, Data, #{}).
-
-delete(User, Type, Data) ->
-    UserData = maps:remove(Type, maps:get(User, Data, #{})),
-    case maps:size(UserData) > 0 of
-        true -> maps:put(User, UserData, Data);
-        false -> maps:remove(User, Data)
+patch(Id, Data, State) ->
+    case maps:find(Id, State) of
+        {ok, PrevData} -> {ok, maps:put(Id, maps:merge(PrevData, Data), State)};
+        error -> {error, not_found}
     end.
 
-delete(User, Data) ->
-    maps:remove(User, Data).
+get(Id, Options, State) ->
+    case maps:find(Id, State) of
+        {ok, Data} -> {ok, get(Data, Options)};
+        error -> {error, not_found}
+    end.
+
+get(Data, Options) ->
+    lists:foldl(fun get_apply_option/2, Data, Options).
+
+get_apply_option({filter, DataKeys}, Data) ->
+    maps:with(DataKeys, Data).
+
+delete(Id, DataKeys, State) ->
+    case maps:find(Id, State) of
+        {ok, PrevData} -> {ok, delete(Id, DataKeys, PrevData, State)};
+        error -> {error, not_found}
+    end.
+
+delete(Id, DataKeys, Data, State) ->
+    NewData = maps:without(DataKeys, Data),
+    case maps:size(NewData) > 0 of
+        true -> maps:put(Id, NewData, State);
+        false -> maps:remove(Id, State)
+    end.

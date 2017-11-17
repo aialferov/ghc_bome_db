@@ -1,6 +1,6 @@
 REBAR = ./rebar3
 
-BUILDDIR = _build
+BUILD_DIR = _build
 
 all:
 	$(REBAR) compile
@@ -14,7 +14,7 @@ clean:
 	$(REBAR) unlock
 
 distclean: clean
-	rm -rf $(BUILDDIR)
+	rm -rf $(BUILD_DIR)
 
 shell:
 	$(REBAR) shell
