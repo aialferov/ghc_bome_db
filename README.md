@@ -1,37 +1,99 @@
 # GHC Bome database
 
-Provides database Erlang application for GHC Bome Service and is used there
-as a dependency application.
+Erlang application implementing data storage server for
+[GHC Bome Service](http://github.com/aialferov/ghc-bome).
 
 ## API
 
-Put data:
+The application provides CRUD operations with user data and exports
+corresponding functions for that.
+
+### Create
+
+The following function creates or ovewrites existing data of the specified
+(by "Id") resource:
+
 ```
-> ghc_bome_db:put(User, Type, Value).
+-spec ghc_bome_db:put(
+    Id :: term(),
+    Data :: #{
+        Type :: term(),
+        Value :: term()
+    }
+) ->
+    {ok, created} |
+    {ok, modified}
 ```
 
-Get data:
+### Read
+
+Data of the resource could also be read by its "Id":
+
 ```
-> ghc_bome_db:get(User, Type).
-> ghc_bome_db:get(User).
+-spec ghc_bome_db:get(
+    Id :: term(),
+    Options :: [
+        {filter, [DataType :: term()]}
+    ]
+) ->
+    {ok, Data :: #{
+        Type :: term(),
+        Value :: term()
+    }} |
+    {error, not_found}
 ```
 
-Delete data:
+If option "filter" is specified the data of specified "type" list will be
+returned only.
+
+### Update
+
+The "patch" function is used to partially update the data:
+
 ```
-> ghc_bome_db:delete(User, Type).
-> ghc_bome_db:delete(User).
+-spec ghc_bome_db:patch(
+    Id :: term(),
+    Data :: #{
+        Type :: term(),
+        Value :: term()
+    }
+) ->
+    ok | {error, not_found}
 ```
 
-### Debug
+### Delete
 
-To debug or play with the API functions run an Erlang shell:
+All the data to delete should be excplicitly specified:
+
+```
+-spec ghc_bome_db:delete(
+    Id :: term(),
+    DataKeys :: [
+        Type :: term(),
+    ]
+) ->
+    ok | {error, not_found}
+```
+
+## Run
+
+Although the application should be used within the GHC Bome Service it also
+could run on its own, for instance for debug purposes. The following command
+runs the application in an Erlang shell:
+
 ```
 $ make shell
 ```
 
-## Persistence
+The received data is being saved every 1 second into the "ghc_bome.db" file
+(in the working directory). This could be configured in "app" file or overriden
+in any other appropriate way (e.g. using a custom "sys.config" file or by
+"application:set_env/3,4").
 
-Data is being saved every second (if any changes) into the "ghc_bome.db"
-file (in the working directory). The parameters are specified in the
-"env" section of the "src/ghc_bome_db.app.src" file, so could be overriden
-by a custom config file.
+### Tests
+
+Run unit tests:
+
+```
+$ make check
+```

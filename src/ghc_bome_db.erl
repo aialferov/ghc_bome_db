@@ -14,6 +14,6 @@ stop() -> application:stop(?MODULE).
 put(Id, Data) -> call({put, {Id, Data}}).
 patch(Id, Data) -> call({patch, {Id, Data}}).
 get(Id, Options) -> call({get, {Id, Options}}).
-delete(Id, Data) -> call({delete, {Id, Data}}).
+delete(Id, DataKeys) -> call({delete, {Id, DataKeys}}).
 
 call(Request) -> gen_server:call(?Server, Request).
