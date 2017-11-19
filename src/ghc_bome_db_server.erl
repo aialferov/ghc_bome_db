@@ -13,44 +13,48 @@
 
 -define(Backend, ghc_bome_db_backend).
 
--record(state, {data_state, saved, file_path}).
+-record(state, {data, saved, file_path}).
 
 start_link(Args) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, Args, []).
 
 init(Args) ->
+    FilePath = proplists:get_value(file_path, Args),
+    {ok, Data} = ?Backend:load(FilePath),
+    ok = ?Backend:save(FilePath, Data),
+
     SaveInterval = proplists:get_value(save_interval, Args),
     {ok, _TRef} = timer:send_interval(SaveInterval, save),
 
-    FilePath = proplists:get_value(file_path, Args),
-    {ok, DataState} = ?Backend:load(FilePath),
-    ok = ?Backend:save(FilePath, DataState),
+    {ok, #state{data = Data, saved = true, file_path = FilePath}}.
 
-    {ok, #state{data_state = DataState, saved = true, file_path = FilePath}}.
-
-handle_call({put, {Id, Data}}, _From, State) ->
-    case ?Backend:put(Id, Data, data_state(State)) of
-        {ok, {Impact, NewDataState}} ->
-            {reply, {ok, Impact}, set_data_state(NewDataState, State)};
-        {error, Reason} ->
-            {reply, {error, Reason}, State}
+handle_call({put, {UserId, Metrics}}, _From, State) ->
+    case ?Backend:put(UserId, Metrics, data(State)) of
+        {ok, {Impact, Data}} -> {reply, {ok, Impact}, set_data(Data, State)};
+        {error, Reason} -> {reply, {error, Reason}, State}
     end;
 
-handle_call({get, {Id, Options}}, _From, State) ->
-    {reply, ?Backend:get(Id, Options, data_state(State)), State};
+handle_call({get, {UserId, Options}}, _From, State) ->
+    {reply, ?Backend:get(UserId, Options, data(State)), State};
 
-handle_call({Action, {Id, Data}}, _From, State) ->
-    case ?Backend:Action(Id, Data, data_state(State)) of
-        {ok, NewDataState} -> {reply, ok, set_data_state(NewDataState, State)};
+handle_call({patch, {UserId, Metrics}}, _From, State) ->
+    case ?Backend:patch(UserId, Metrics, data(State)) of
+        {ok, Data} -> {reply, ok, set_data(Data, State)};
+        {error, Reason} -> {reply, {error, Reason}, State}
+    end;
+
+handle_call({delete, {UserId, MetricNames}}, _From, State) ->
+    case ?Backend:delete(UserId, MetricNames, data(State)) of
+        {ok, Data} -> {reply, ok, set_data(Data, State)};
         {error, Reason} -> {reply, {error, Reason}, State}
     end.
 
 handle_cast(_Request, State) -> {norepy, State}.
 
 handle_info(save, State = #state{saved = Saved, file_path = FilePath}) ->
-    Saved orelse ?Backend:save(FilePath, data_state(State)), 
+    Saved orelse ?Backend:save(FilePath, data(State)), 
     {noreply, State#state{saved = true}}.
 
-data_state(#state{data_state = DataState}) -> DataState.
-set_data_state(DataState, State) ->
-    State#state{data_state = DataState, saved = false}.
+data(#state{data = DataState}) -> DataState.
+set_data(DataState, State) ->
+    State#state{data = DataState, saved = false}.

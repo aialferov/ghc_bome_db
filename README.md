@@ -1,23 +1,23 @@
 # GHC Bome database
 
-Erlang application implementing data storage server for
+Erlang application implementing metric storage server for
 [GHC Bome Service](http://github.com/aialferov/ghc-bome).
 
 ## API
 
-The application provides CRUD operations with user data and exports
+The application provides CRUD operations with user metrics and exports
 corresponding functions for that.
 
 ### Create
 
-The following function creates or ovewrites existing data of the specified
-(by "Id") resource:
+The following function creates or ovewrites existing metrics of the specified
+(by "User Id") resource:
 
 ```
 -spec ghc_bome_db:put(
-    Id :: term(),
-    Data :: #{
-        Type :: term(),
+    UserId :: term(),
+    Metrics :: #{
+        Name :: term(),
         Value :: term()
     }
 ) ->
@@ -27,53 +27,58 @@ The following function creates or ovewrites existing data of the specified
 
 ### Read
 
-Data of the resource could also be read by its "Id":
+Metrics could also be read by its User Id:
 
 ```
 -spec ghc_bome_db:get(
-    Id :: term(),
+    UserId :: term(),
     Options :: [
-        {filter, [DataType :: term()]}
+        {filter, [MetricName :: term()]}
     ]
 ) ->
-    {ok, Data :: #{
-        Type :: term(),
+    {ok, Metrics :: #{
+        Name :: term(),
         Value :: term()
     }} |
     {error, not_found}
 ```
 
-If option "filter" is specified the data of specified "type" list will be
-returned only.
+Option "filter" contains list of metric names to return. If it is absent all
+metrics are returned. If it is empty — an empty map is returned.
 
 ### Update
 
-The "patch" function is used to partially update the data:
+The "patch" function is used to partially update metrics:
 
 ```
 -spec ghc_bome_db:patch(
-    Id :: term(),
-    Data :: #{
-        Type :: term(),
+    UserId :: term(),
+    Metrics :: #{
+        Name :: term(),
         Value :: term()
     }
 ) ->
     ok | {error, not_found}
 ```
 
+Existing metrics will be updated. Not existing metrics will be added.
+
 ### Delete
 
-All the data to delete should be excplicitly specified:
+All the metrics to delete should be excplicitly specified:
 
 ```
 -spec ghc_bome_db:delete(
-    Id :: term(),
-    DataKeys :: [
-        Type :: term(),
+    UserId :: term(),
+    MetricNames :: [
+        Name :: term(),
     ]
 ) ->
     ok | {error, not_found}
 ```
+
+Attempt to delete non-existing metric or empty metric names list affect nothing
+and return "ok".
 
 ## Run
 

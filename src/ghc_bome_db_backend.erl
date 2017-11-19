@@ -7,49 +7,50 @@
 
 load(FileName) ->
     case file:consult(FileName) of
-        {ok, [State]} -> {ok, State};
+        {ok, [Data]} -> {ok, Data};
         {error, enoent} -> {ok, #{}};
         {error, Reason} -> {error, Reason}
     end.
 
-save(FileName, State) ->
-    file:write_file(FileName, lists:flatten(io_lib:format("~p.", [State]))).
+save(FileName, Data) ->
+    file:write_file(FileName, lists:flatten(io_lib:format("~p.", [Data]))).
 
-put(Id, Data, State) ->
-    IsModified = maps:is_key(Id, State),
-    NewState = maps:put(Id, Data, State),
+put(UserId, Metrics, Data) ->
+    IsModified = maps:is_key(UserId, Data),
+    NewData = maps:put(UserId, Metrics, Data),
     case IsModified of
-        true -> {ok, {modified, NewState}};
-        false -> {ok, {created, NewState}}
+        true -> {ok, {modified, NewData}};
+        false -> {ok, {created, NewData}}
     end.
 
-patch(Id, Data, State) ->
-    case maps:find(Id, State) of
-        {ok, PrevData} -> {ok, maps:put(Id, maps:merge(PrevData, Data), State)};
+patch(UserId, Metrics, Data) ->
+    case maps:find(UserId, Data) of
+        {ok, PrevMetrics} ->
+            {ok, maps:put(UserId, maps:merge(PrevMetrics, Metrics), Data)};
         error -> {error, not_found}
     end.
 
-get(Id, Options, State) ->
-    case maps:find(Id, State) of
-        {ok, Data} -> {ok, get(Data, Options)};
+get(UserId, Options, Data) ->
+    case maps:find(UserId, Data) of
+        {ok, Metrics} -> {ok, get(Metrics, Options)};
         error -> {error, not_found}
     end.
 
-get(Data, Options) ->
-    lists:foldl(fun get_apply_option/2, Data, Options).
+get(Metrics, Options) ->
+    lists:foldl(fun get_apply_option/2, Metrics, Options).
 
-get_apply_option({filter, DataKeys}, Data) ->
-    maps:with(DataKeys, Data).
+get_apply_option({filter, MetricNames}, Data) ->
+    maps:with(MetricNames, Data).
 
-delete(Id, DataKeys, State) ->
-    case maps:find(Id, State) of
-        {ok, PrevData} -> {ok, delete(Id, DataKeys, PrevData, State)};
+delete(UserId, MetricNames, Data) ->
+    case maps:find(UserId, Data) of
+        {ok, Metrics} -> {ok, delete(UserId, MetricNames, Metrics, Data)};
         error -> {error, not_found}
     end.
 
-delete(Id, DataKeys, Data, State) ->
-    NewData = maps:without(DataKeys, Data),
-    case maps:size(NewData) > 0 of
-        true -> maps:put(Id, NewData, State);
-        false -> maps:remove(Id, State)
+delete(UserId, MetricNames, Metrics, Data) ->
+    NewMetrics = maps:without(MetricNames, Metrics),
+    case maps:size(NewMetrics) > 0 of
+        true -> maps:put(UserId, NewMetrics, Data);
+        false -> maps:remove(UserId, Data)
     end.

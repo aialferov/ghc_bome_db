@@ -11,9 +11,9 @@
 start() -> application:ensure_all_started(?MODULE).
 stop() -> application:stop(?MODULE).
 
-put(Id, Data) -> call({put, {Id, Data}}).
-patch(Id, Data) -> call({patch, {Id, Data}}).
-get(Id, Options) -> call({get, {Id, Options}}).
-delete(Id, DataKeys) -> call({delete, {Id, DataKeys}}).
+put(UserId, Metrics) -> call({put, {UserId, Metrics}}).
+patch(UserId, Metrics) -> call({patch, {UserId, Metrics}}).
+get(UserId, Options) -> call({get, {UserId, Options}}).
+delete(UserId, MetricNames) -> call({delete, {UserId, MetricNames}}).
 
 call(Request) -> gen_server:call(?Server, Request).
