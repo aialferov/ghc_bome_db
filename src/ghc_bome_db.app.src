@@ -1,7 +1,6 @@
 {application, ghc_bome_db, [
     {description, "GHC Bome database"},
-    {id, "ghc_bome_db"},
-    {vsn, "0.1.0"},
+    {vsn, "0.2.0"},
     {modules, []},
     {applications, [kernel, stdlib]},
     {mod, {ghc_bome_db_app, []}},
